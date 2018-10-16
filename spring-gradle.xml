@@ -1,0 +1,16 @@
+<Context docBase="E:/misc/testworkspace/spring-sample-gradle/build/web" context="" debug="0" reloadable="false" antiJARLocking="true">
+        <Resource name="jdbc/springSampleDS" auth="Container"
+                description="Exchange DB Connection"
+				driverClass="org.postgresql.Driver"
+                jdbcUrl="jdbc:postgresql://localhost:5432/batchdb"				
+				user="postgres"
+				password="post@123"
+                maxPoolSize="30"
+                minPoolSize="1"
+                maxIdleTime="7200"
+                acquireIncrement="3"
+                maxStatements="150"
+                numHelperThreads="6"
+                factory="org.apache.naming.factory.BeanFactory"
+                type="com.mchange.v2.c3p0.ComboPooledDataSource"/>
+</Context>

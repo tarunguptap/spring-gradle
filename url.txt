@@ -1,0 +1,28 @@
+1. Firstly, copy and paste the resources folder in tomcat's webapp folder.
+2. Copy and paste the "spring-sample-gradle.xml" (from classpath) to tomcat's conf\Catalina\localhost folder
+
+
+
+http://localhost:8090/spring-sample/welcome  admin/Password1
+http://localhost:8080/spring-gradle/login
+
+
+
+
+http://localhost:8090/spring-sample/api/rest/v1/user/1
+Get
+Headers :
+Accept:application/json
+Content-Type:application/json
+Auth :
+admin:Password1
+
+
+
+gradle updateDatabase -Djdbc.url=jdbc:postgresql://localhost:5432/batchdb -Djdbc.username=postgres -Djdbc.password=post@123
+
+to update the git user name :
+copy paste below in the config file from project specific .git folder
+[user]
+ email = tarunguptap@yahoo.com
+ name = tarun-gupta

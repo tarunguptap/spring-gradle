@@ -1,0 +1,142 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+ext {
+	javaVersion = 1.8
+	springVersion = '3.2.16.RELEASE'
+	springSecurityVersion = '3.1.4.RELEASE'
+	databaseContext = System.getProperty('databaseContext') == null ? 'dev' : System.getProperty('databaseContext')
+	env = System.getProperty('env') ?: 'dev'
+    props = getProps(env)
+}
+
+def getProps(String env) {
+    Properties props = new Properties()
+    props.load(project.rootProject.file(env + ".properties").newDataInputStream())
+    props.putAll(System.getProperties())
+    props
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'war'
+
+sourceCompatibility = javaVersion
+targetCompatibility = javaVersion
+
+repositories {
+	mavenCentral()
+}
+
+configurations {
+	ajc      // lightweight aspect compiler CP
+    aspects  // lightweight aspect CP
+    liquibase
+    compile {
+        extendsFrom aspects
+    }
+    all*.exclude group: 'cglib', module: 'cglib'
+    all*.exclude group: 'asm'
+    all*.exclude module: 'slf4j-jdk14'
+    all*.exclude group: 'commons-logging'
+    all*.exclude group: 'log4j'
+}
+
+dependencies {
+	ajc 'org.aspectj:aspectjtools:1.8.3'
+    aspects "org.springframework:spring-aspects:$springVersion", {
+        exclude module: 'aspectjweaver'
+    }
+    liquibase 'org.liquibase:liquibase-core:3.1.1'
+    liquibase 'org.postgresql:postgresql:9.3-1103-jdbc41'
+    
+    compile 'org.aspectj:aspectjrt:1.8.3'
+    compile 'org.aspectj:aspectjweaver:1.8.3'
+    
+    compile 'org.springframework:spring-aop:' + springVersion
+    compile 'org.springframework:spring-beans:' + springVersion
+    compile 'org.springframework:spring-context:' + springVersion
+    compile 'org.springframework:spring-expression:' + springVersion
+    compile 'org.springframework:spring-jdbc:' + springVersion
+    compile 'org.springframework:spring-orm:' + springVersion
+    compile 'org.springframework:spring-tx:' + springVersion
+    compile 'org.springframework:spring-web:' + springVersion
+    compile 'org.springframework:spring-webmvc:' + springVersion
+    
+    compile 'javax.transaction:jta:1.1'
+    
+    compile 'org.hibernate:hibernate:3.3.2.GA'
+    compile 'org.hibernate:hibernate-core:3.3.2.GA'
+    compile 'org.hibernate:hibernate-annotations:3.3.1.GA'
+    compile 'org.hibernate:ejb3-persistence:1.0.2.GA'
+    compile 'org.hibernate:hibernate-validator:4.0.2.GA'
+    
+    
+    
+    compile 'cglib:cglib-nodep:2.2.2'
+    compile 'net.sf.ehcache:ehcache:1.6.2'
+    
+    compile 'org.springframework.security:spring-security-core:3.0.5.RELEASE', {
+    	exclude module: 'aspectjweaver'
+    }
+    compile 'org.springframework.security:spring-security-web:' + springSecurityVersion
+    compile 'org.springframework.security:spring-security-config:' + springSecurityVersion
+    compile 'org.springframework.security:spring-security-taglibs:' + springSecurityVersion
+    
+    compile 'commons-collections:commons-collections:3.2'
+    compile 'commons-lang:commons-lang:2.4'
+    compile 'commons-validator:commons-validator:1.1.4'
+    compile 'commons-digester:commons-digester:1.8'
+    compile 'org.apache.httpcomponents:httpclient:4.2.3'
+    
+    compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.3'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.5.1'
+    compile 'org.json:json:20090211'
+    compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.5'
+    compile 'org.apache.logging.log4j:log4j-core:2.5'
+    compile 'org.slf4j:jcl-over-slf4j:1.7.21'
+	compile 'joda-time:joda-time:2.3'
+	providedCompile 'javax.servlet:servlet-api:2.5'
+    providedCompile 'javax.servlet.jsp:jsp-api:2.2'
+    runtime 'jstl:jstl:1.2'
+    runtime 'org.javassist:javassist:3.15.0-GA'
+}
+
+task explodedWar(type: Copy) {
+    into "$buildDir/web"
+    with war
+}
+
+war {
+    baseName = 'spring-gradle'
+}
+
+task updateDatabase(dependsOn: classes) << {
+    ant.taskdef (
+            resource: 'liquibasetasks.properties'
+            ,classpath: configurations.liquibase.asPath
+    )
+
+    ant.path(id: 'classpath') {
+        ant.pathelement(path: configurations.liquibase.asPath)
+        ant.pathelement(path: sourceSets.main.runtimeClasspath.asPath)
+    }
+
+    ant.updateDatabase (
+            changeLogFile: '/src/main/resources/liquibase/db_changelog.xml'
+            ,dropFirst: false
+            ,classpathref: 'classpath'
+            ,contexts: props['databaseContext']
+            ,url: props['jdbc.url']
+            ,username: props['jdbc.username']
+            ,password: props['jdbc.password']
+            ,driver: 'org.postgresql.Driver'
+    ) 
+}
+
+
+eclipse {
+	classpath {
+		 containers.remove('org.eclipse.jdt.launching.JRE_CONTAINER')
+		 containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8'
+	}
+}
